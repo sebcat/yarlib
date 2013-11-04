@@ -53,6 +53,7 @@ static void on_read(struct yar_endpoint *ep)
         yar_addr_to_str(&ep->addr, addrbuf);
         yar_port_to_str(ep->port, portbuf, sizeof(portbuf));
         printf("%s %s\n%.*s\n\n\n", addrbuf, portbuf, (int)len, read);
+        yar_endpoint_terminate(ep);
     }
 
 }
