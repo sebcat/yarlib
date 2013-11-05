@@ -1,7 +1,7 @@
 yarlib
 ======
 
-Yet Another Reactor Library
+Yet Another Reactor Library / libevent wrapper
 
 Write scalable, event-driven client applications for many simultaneous sessions.
 
