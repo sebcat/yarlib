@@ -395,7 +395,7 @@ const char *yar_endpoint_get_errmsg(yar_endpoint_handle_t *eph)
 }
 
 void yar_endpoint_set_cdata(struct yar_endpoint_handle *eph, void *cdata,
-        yae_endpoint_data_free_cb free_cb)
+        yar_endpoint_data_free_cb free_cb)
 {
     assert(eph != NULL);
     eph->cdata = cdata;

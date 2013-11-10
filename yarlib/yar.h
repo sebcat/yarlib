@@ -74,7 +74,7 @@ struct yar_client {
 
 
 void yar_endpoint_set_cdata(struct yar_endpoint_handle *eph, void *cdata,
-        yae_endpoint_data_free_cb free_cb);
+        yar_endpoint_data_free_cb free_cb);
 void *yar_endpoint_get_cdata(struct yar_endpoint_handle *eph);
 void *yar_endpoint_read(yar_endpoint_handle_t *eph, size_t *len);
 void yar_endpoint_write(yar_endpoint_handle_t *eph, const void *data,
