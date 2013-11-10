@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
     }
 
     memset(&cli, 0, sizeof(cli));
+    cli.proto = ADDRPROTO_TCP;
     cli.on_established = on_established;
     cli.on_read = on_read;
     cli.read_validator = read_validator;

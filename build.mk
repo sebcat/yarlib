@@ -21,5 +21,5 @@ clean:
 
 distclean:
 	$(RM) $(OBJ) $(TARGET) $(SINGLE_TARGET) $(TARGETLIB) $(DEP_FILES) \
-		*.core .*.swp
+		*.core .*.swp *.gcno *.gcda *.gcov *.gmon
 

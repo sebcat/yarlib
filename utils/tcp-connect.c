@@ -32,24 +32,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TICKRATE        10
 #define IO_TIMEOUT_US   5000000
 
-static void print_msg(struct yar_endpoint *ep, const char *stat, 
-        const char *aux) 
+static void on_established(struct yar_endpoint *ep)
 {
     char addr[ADDR_STRLEN];
     char port[16];
-
+    
     yar_port_to_str(ep->port, port, sizeof(port));
     yar_addr_to_str(&ep->addr, addr);
-    if (aux == NULL) {
-        printf("%s %s %s\n", stat, addr, port);
-    } else {
-        printf("%s %s %s (%s)\n", stat, addr, port, aux);
-    }
-}
-
-static void on_established(struct yar_endpoint *ep)
-{
-    print_msg(ep, "open", NULL);
+    printf("open %s %s\n", addr, port);
     yar_endpoint_terminate(ep);
 }
 

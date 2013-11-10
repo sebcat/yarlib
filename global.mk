@@ -1,6 +1,6 @@
 CC=clang
 CFLAGS=
-CFLAGS+=-Werror -Wall -pedantic -ansi -g 
+CFLAGS+=-Werror -Wall -g 
 CFLAGS+=-I/usr/local/include
 
 RM=rm -f
