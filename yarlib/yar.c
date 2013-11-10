@@ -37,6 +37,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "yar.h"
 
+/**
+ * all events share a single event_base by design. This is important, because
+ * of the intended use case for this library. This also means multi-threading
+ * is a bad idea.
+ */
 static struct event_base *_evbase = NULL;
 
 #define YARINIT() \
@@ -144,8 +149,6 @@ static struct yar_connect_ticker *yar_connect_ticker_new(
         free(ticker);
         return NULL;
     }
-
-
 
     return ticker;
 }
@@ -389,6 +392,20 @@ const char *yar_endpoint_get_errmsg(yar_endpoint_handle_t *eph)
         cptr = evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR());
         return cptr != NULL ? cptr : "unknown error";
     }
+}
+
+void yar_endpoint_set_cdata(struct yar_endpoint_handle *eph, void *cdata,
+        yae_endpoint_data_free_cb free_cb)
+{
+    assert(eph != NULL);
+    eph->cdata = cdata;
+    eph->free_cb = free_cb;
+}
+
+void *yar_endpoint_get_cdata(struct yar_endpoint_handle *eph)
+{
+    assert(eph != NULL);
+    return eph->cdata; 
 }
 
 void *yar_endpoint_read(yar_endpoint_handle_t *eph, size_t *len)
