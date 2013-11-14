@@ -52,6 +52,13 @@ static struct event_base *_evbase = NULL;
         } \
     } while (0);
 
+struct yar_ticker {
+    struct event *ev;
+    yar_ticker_func f;
+    void *data;
+    yar_cleanup_func free_cb;
+};
+
 #define CONNECT_TICKER_FLG_FINISHED_DISPATCHING    1  
 struct yar_connect_ticker {
     struct yar_client *cli;
@@ -69,7 +76,7 @@ struct yar_endpoint_handle {
     
     /* caller data, for storing stuff related to an endpoint connection */
     void *cdata;
-    yar_endpoint_data_free_cb free_cb;
+    yar_cleanup_func free_cb;
 };
 
 static struct yar_endpoint_handle *yar_endpoint_handle_new(
@@ -153,8 +160,9 @@ static struct yar_connect_ticker *yar_connect_ticker_new(
     return ticker;
 }
 
-static void yar_connect_ticker_free(struct yar_connect_ticker *ticker)
+static void yar_connect_ticker_free(void *data)
 {
+    struct yar_connect_ticker *ticker = data;
     if (ticker != NULL) {
         if (ticker->addrspec != NULL) {
             yar_addrspec_free(ticker->addrspec);
@@ -334,7 +342,7 @@ static void yar_connect_ticker_dispatch_connections(
     }
 }
 
-static void yar_connect_ticker_cb(evutil_socket_t cfd, short what, void *data)
+static int yar_connect_ticker_cb(void *data)
 {
     struct yar_connect_ticker *ticker = data;
     struct yar_client *cli;
@@ -348,10 +356,10 @@ static void yar_connect_ticker_cb(evutil_socket_t cfd, short what, void *data)
 
     if (ticker->flags & CONNECT_TICKER_FLG_FINISHED_DISPATCHING) {
         if (ticker->ncurrent == 0) {
-            yar_connect_ticker_free(ticker);
+            return TICKER_DONE;
         }
 
-        return;
+        return TICKER_CONT;
     }
 
     /* determine maximum number of allowed connections for this tick */
@@ -378,6 +386,8 @@ static void yar_connect_ticker_cb(evutil_socket_t cfd, short what, void *data)
     if (ticker->ncurrent < nconn_max) {
         yar_connect_ticker_dispatch_connections(ticker, nconn_max);
     }
+
+    return TICKER_CONT;
 }
 
 const char *yar_endpoint_get_errmsg(yar_endpoint_handle_t *eph)
@@ -395,7 +405,7 @@ const char *yar_endpoint_get_errmsg(yar_endpoint_handle_t *eph)
 }
 
 void yar_endpoint_set_cdata(struct yar_endpoint_handle *eph, void *cdata,
-        yar_endpoint_data_free_cb free_cb)
+        yar_cleanup_func free_cb)
 {
     assert(eph != NULL);
     eph->cdata = cdata;
@@ -444,16 +454,63 @@ void yar_endpoint_terminate(struct yar_endpoint *ep)
     yar_endpoint_handle_free(&ep->handle);
 }
 
+static void yar_ticker_cb(evutil_socket_t cfd, short what, void *data)
+{
+    struct yar_ticker *t;
+    assert(data != NULL);
+    
+    t = data;
+    if (t->f(t->data) == TICKER_DONE) {
+        t->free_cb(t->data);
+        event_free(t->ev);
+        free(t);
+    }
+}
+
+int yar_ticker(yar_ticker_func func, unsigned int tick_rate, void *data,
+        yar_cleanup_func free_cb)
+{
+    struct yar_ticker *t;
+    struct timeval tv;
+    assert(func != NULL);
+    assert(tick_rate > 0);
+
+    YARINIT();
+
+    t = malloc(sizeof(*t));
+    if (!t) {
+        return -1;
+    }
+
+    if (tick_rate > 1000000) {
+        tick_rate = 1000000;
+    }
+
+    tv.tv_sec = 0; 
+    tv.tv_usec = 1000000 / tick_rate;
+    t->f = func;
+    t->data = data;
+    t->free_cb = free_cb;
+    t->ev = event_new(_evbase, -1, EV_TIMEOUT|EV_PERSIST, 
+            yar_ticker_cb, t);
+    if (t->ev == NULL) {
+        free(t);
+        return -1;
+    }
+    
+    event_add(t->ev, &tv);
+    return 0;
+}
+
 int yar_connect(struct yar_client *cli, const char *addrspec, 
         const char *portspec)
 {
     struct yar_connect_ticker *ticker;
-    struct event *ev = NULL;
-    struct timeval tv;
+    unsigned int tick_rate;
 
-    if (cli == NULL || addrspec == NULL || portspec == NULL) {
-        return -1;
-    }
+    assert(cli != NULL);
+    assert(addrspec != NULL);
+    assert(portspec != NULL);
 
     YARINIT();
 
@@ -467,33 +524,18 @@ int yar_connect(struct yar_client *cli, const char *addrspec,
     }
 
     if (cli->tr == 0 || cli->tr > 1000000) {
-        /* Dispatch all connections at once. 
-         * We only free the ticker struct when all endpoint connections
-         * are finished, so we still make a recurring tick to check if 
-         * all the dispatched connections are complete and we're able to free
-         * the ticker struct.
-         *
-         * this is not ideal, but the current ticker connection count 
-         * implementation needs it because connection terminations are handled 
-         * by the endpoint referencing the ticker struct.
-         */
-        cli->tr = 0; 
-        tv.tv_sec = 0; 
-        tv.tv_usec = 500000;  
+        cli->tr = 0;
+        tick_rate = 2;  
     } else {
-        tv.tv_sec = 0; 
-        tv.tv_usec = 1000000 / cli->tr;
+        tick_rate = cli->tr;
     }
 
-    ev = event_new(_evbase, -1, EV_TIMEOUT|EV_PERSIST, 
-            yar_connect_ticker_cb, ticker);
-    if (ev == NULL) {
+    if (yar_ticker(yar_connect_ticker_cb, tick_rate, ticker, 
+            yar_connect_ticker_free) < 0) {
         yar_connect_ticker_free(ticker);
         return -1;
     }
-    
-    ticker->ev = ev;
-    event_add(ev, &tv);
+
     return 0;
 }
 

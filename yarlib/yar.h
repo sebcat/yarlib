@@ -42,7 +42,12 @@ typedef enum {
 
 typedef struct yar_endpoint_handle yar_endpoint_handle_t;
 
-typedef void (*yar_endpoint_data_free_cb)(void *data);
+typedef void (*yar_cleanup_func)(void *data);
+
+/* TICKER_* - yar_ticker_func return values */
+#define TICKER_DONE 0
+#define TICKER_CONT 1
+typedef int (*yar_ticker_func)(void *data);
 
 struct yar_endpoint {
     yar_endpoint_handle_t *handle;
@@ -72,9 +77,8 @@ struct yar_client {
     yar_read_validator read_validator;
 };
 
-
 void yar_endpoint_set_cdata(struct yar_endpoint_handle *eph, void *cdata,
-        yar_endpoint_data_free_cb free_cb);
+        yar_cleanup_func free_cb);
 void *yar_endpoint_get_cdata(struct yar_endpoint_handle *eph);
 void *yar_endpoint_read(yar_endpoint_handle_t *eph, size_t *len);
 void yar_endpoint_write(yar_endpoint_handle_t *eph, const void *data,
@@ -84,6 +88,9 @@ void yar_endpoint_terminate(struct yar_endpoint *ep);
 
 int yar_connect(struct yar_client *cli, const char *addrspec, 
         const char *portspec);
+
+int yar_ticker(yar_ticker_func func, unsigned int tick_rate, void *data, 
+        yar_cleanup_func free_cb);
 
 int yar_main();
 
