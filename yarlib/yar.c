@@ -395,7 +395,7 @@ const char *yar_endpoint_get_errmsg(yar_endpoint_handle_t *eph)
     const char *cptr;
 
     if (eph == NULL) {
-        /* if eph is null, we couln't establish the connection */
+        /* if eph is null, we couldn't establish the connection */
         return "connection failed";
     } else {
         /* Getting some valgrind errors on line below */

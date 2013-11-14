@@ -77,9 +77,9 @@ struct yar_client {
     yar_read_validator read_validator;
 };
 
-void yar_endpoint_set_cdata(struct yar_endpoint_handle *eph, void *cdata,
+void yar_endpoint_set_cdata(yar_endpoint_handle_t *eph, void *cdata,
         yar_cleanup_func free_cb);
-void *yar_endpoint_get_cdata(struct yar_endpoint_handle *eph);
+void *yar_endpoint_get_cdata(yar_endpoint_handle_t *eph);
 void *yar_endpoint_read(yar_endpoint_handle_t *eph, size_t *len);
 void yar_endpoint_write(yar_endpoint_handle_t *eph, const void *data,
         size_t len);
