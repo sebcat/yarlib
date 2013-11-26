@@ -461,7 +461,10 @@ static void yar_ticker_cb(evutil_socket_t cfd, short what, void *data)
     
     t = data;
     if (t->f(t->data) == TICKER_DONE) {
-        t->free_cb(t->data);
+        if (t->free_cb != NULL) {
+            t->free_cb(t->data);
+        }
+
         event_free(t->ev);
         free(t);
     }
