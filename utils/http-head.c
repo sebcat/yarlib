@@ -27,9 +27,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <yarlib/yar.h>
 
-#define NCURRCONNS      50
+#define NCURRCONNS      500
 #define TICKRATE        10
-#define IO_TIMEOUT_US   5000000
+#define IO_TIMEOUT_US   2000000
 
 static void on_established(struct yar_endpoint *ep)
 {
@@ -52,7 +52,7 @@ static void on_read(struct yar_endpoint *ep)
     if (read != NULL) {
         yar_addr_to_str(&ep->addr, addrbuf);
         yar_port_to_str(ep->port, portbuf, sizeof(portbuf));
-        printf("%s %s\n%.*s\n\n\n", addrbuf, portbuf, (int)len, read);
+        printf("%s %s\n%.*s\n%%%%\n\n", addrbuf, portbuf, (int)len, read);
         yar_endpoint_terminate(ep);
     }
 
@@ -60,7 +60,7 @@ static void on_read(struct yar_endpoint *ep)
 
 static int read_validator(const void *data, size_t len)
 {
-    return strnstr(data, "\r\n\r\n", len) == NULL ? RVALIDATOR_INCOMPLETE :
+    return strstr(data, "\r\n\r\n") == NULL ? RVALIDATOR_INCOMPLETE :
             RVALIDATOR_OK;
 }
 

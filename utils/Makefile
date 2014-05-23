@@ -1,10 +1,20 @@
 
 include ../global.mk
 
-SINGLE_TARGET=expand-addrdef http-head tcp-connect 
-CFLAGS+=-I..
-LIBS+=-L../yarlib -lyarlib
-TARGET_DEP=../yarlib/libyarlib.a
+CFLAGS+=-I.. -L../yarlib
+LIBS+=-levent -lyarlib
+TARGETS=http-head expand-addrdef tcp-connect
 
-include ../build.mk
+all: $(TARGETS) 
 
+http-head: http-head.c 
+	$(CC) $(CFLAGS) -o $@ $? $(LIBS)
+
+expand-addrdef: expand-addrdef.c
+	$(CC) $(CFLAGS) -o $@ $? $(LIBS)
+
+tcp-connect: tcp-connect.c
+	$(CC) $(CFLAGS) -o $@ $? $(LIBS)
+
+clean:
+	$(RM) $(TARGETS)

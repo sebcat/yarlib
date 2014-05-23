@@ -1,8 +1,13 @@
-
 include ../global.mk
 
-SRC=addr.c port.c yar.c
-TARGETLIB=libyarlib.a
+.PHONY=all clean
+all: libyarlib.a
 
-include ../build.mk
+libyarlib.a: addr.c port.c yar.c
+	$(CC) $(CFLAGS) -c addr.c
+	$(CC) $(CFLAGS) -c port.c
+	$(CC) $(CFLAGS) -c yar.c
+	$(AR) libyarlib.a *.o
 
+clean:
+	$(RM) libyarlib.a *.o
